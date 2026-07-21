@@ -2,13 +2,19 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.4</version>
+        <relativePath/>
+    </parent>
     <groupId>org.springframework.samples</groupId>
     <artifactId>spring-framework-petclinic</artifactId>
     <version>7.0.3</version>
 
     <name>Spring Framework Petclinic</name>
-    <packaging>war</packaging>
-    <description>A Spring Framework application based on JSP, Spring MVC, Spring Data JPA, Hibernate and JDBC</description>
+    <packaging>jar</packaging>
+    <description>A Spring Boot application based on JSP, Spring MVC and Spring Data JPA</description>
     <url>https://spring-petclinic.github.io/</url>
 
     <properties>
@@ -73,13 +79,10 @@
         <aspectj.version>1.9.25.1</aspectj.version>
 
         <!-- Maven plugins -->
-        <jetty-maven-plugin.version>11.0.26</jetty-maven-plugin.version>
-        <maven-assembly-plugin.version>3.8.0</maven-assembly-plugin.version>
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <maven-eclipse-plugin.version>2.10</maven-eclipse-plugin.version>
         <maven-resources-plugin.version>3.4.0</maven-resources-plugin.version>
         <maven-surefire-plugin.version>3.5.5</maven-surefire-plugin.version>
-        <maven-war-plugin.version>3.5.1</maven-war-plugin.version>
         <jacoco-maven-plugin>0.8.14</jacoco-maven-plugin>
         <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
         <libsass-maven-plugin.version>0.3.4</libsass-maven-plugin.version>
@@ -111,16 +114,22 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
             <version>${servlet-api.version}</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.tomcat</groupId>
-            <artifactId>tomcat-jasper-el</artifactId>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-jasper</artifactId>
             <version>${tomcat.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -346,6 +355,11 @@
                 <directory>${basedir}/src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
+            <resource>
+                <directory>${basedir}/src/main/webapp</directory>
+                <targetPath>META-INF/resources</targetPath>
+                <filtering>false</filtering>
+            </resource>
         </resources>
         <testResources>
             <testResource>
@@ -379,11 +393,10 @@
             </plugin>
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>${maven-war-plugin.version}</version>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                    <mainClass>org.springframework.samples.petclinic.PetClinicApplication</mainClass>
                 </configuration>
             </plugin>
 
@@ -411,17 +424,6 @@
                         <projectnature>org.springframework.ide.eclipse.core.springnature</projectnature>
                         <projectnature>org.eclipse.m2e.core.maven2Nature</projectnature>
                     </additionalProjectnatures>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>${maven-assembly-plugin.version}</version>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
                 </configuration>
             </plugin>
 
@@ -459,13 +461,8 @@
                 <configuration>
                     <encoding>UTF-8</encoding>
                     <propertiesEncoding>UTF-8</propertiesEncoding>
+                    <useDefaultDelimiters>true</useDefaultDelimiters>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
-                <version>${jetty-maven-plugin.version}</version>
             </plugin>
 
             <plugin>
@@ -475,11 +472,8 @@
                 <!-- See https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin -->
                 <configuration>
                     <from>
-                        <image>jetty:11.0-jdk17</image>
+                        <image>eclipse-temurin:17-jre</image>
                     </from>
-                    <container>
-                        <entrypoint>java,-jar,/usr/local/jetty/start.jar</entrypoint>
-                    </container>
                     <to>
                         <image>docker.io/${docker.image.prefix}/${project.artifactId}</image>
                         <tags>

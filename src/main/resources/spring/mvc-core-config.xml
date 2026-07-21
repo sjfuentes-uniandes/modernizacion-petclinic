@@ -22,7 +22,7 @@
     <context:component-scan
         base-package="org.springframework.samples.petclinic.web"/>
 
-    <mvc:annotation-driven conversion-service="conversionService"/>
+    <mvc:annotation-driven conversion-service="mvcConversionService"/>
 
     <!--  all resources inside folder src/main/webapp/resources are mapped so they can be refered to inside JSP files
         (see htmlHeader.jsp for more details) -->
@@ -34,11 +34,7 @@
 
     <mvc:view-controller path="/" view-name="welcome"/>
 
-    <!-- serve static resources (*.html, ...) from src/main/webapp/
-    Required when both servlet-mapping is '/' and static resources need to be served -->
-    <mvc:default-servlet-handler/>
-
-    <bean id="conversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+    <bean id="mvcConversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
         <property name="formatters">
             <set>
                 <bean class="org.springframework.samples.petclinic.web.PetTypeFormatter"/>
