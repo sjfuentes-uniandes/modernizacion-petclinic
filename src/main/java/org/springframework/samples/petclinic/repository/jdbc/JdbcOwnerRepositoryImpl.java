@@ -82,6 +82,22 @@ public class JdbcOwnerRepositoryImpl implements OwnerRepository {
     }
 
     /**
+     * Loads every {@link Owner} from the data store; also loads the {@link Pet Pets} and {@link Visit Visits} for the
+     * corresponding owners, if not already loaded.
+     */
+    @Override
+    public Collection<Owner> findAll() {
+        List<Owner> owners = this.jdbcClient.sql("""
+                SELECT id, first_name, last_name, address, city, telephone
+                FROM owners
+                """)
+            .query(BeanPropertyRowMapper.newInstance(Owner.class))
+            .list();
+        loadOwnersPetsAndVisits(owners);
+        return owners;
+    }
+
+    /**
      * Loads the {@link Owner} with the supplied <code>id</code>; also loads the {@link Pet Pets} and {@link Visit Visits}
      * for the corresponding owner, if not already loaded.
      */

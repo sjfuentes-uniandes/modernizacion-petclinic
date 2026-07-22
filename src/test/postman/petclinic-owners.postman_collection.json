@@ -1,0 +1,413 @@
+{
+  "info": {
+    "name": "PetClinic F002 - Gestión de propietarios (API REST)",
+    "description": "Colección de evidencias del segundo incremento del pre-experimento (F002, Wrapping). Cubre las operaciones GET, POST y PUT sobre propietarios, la validación de nombre, apellido, dirección, ciudad y teléfono, el rechazo de solicitudes inválidas, la respuesta 404 ante recursos inexistentes y la vinculación de un propietario con una mascota existente. Requiere la aplicación en ejecución con 'java -jar target/petclinic.jar'.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "ownerId", "value": "" },
+    { "key": "existingOwnerId", "value": "1" },
+    { "key": "existingPetId", "value": "1" },
+    { "key": "missingId", "value": "9999" }
+  ],
+  "item": [
+    {
+      "name": "Casos válidos",
+      "item": [
+        {
+          "name": "GET listar todos los propietarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/owners", "host": ["{{baseUrl}}"], "path": ["api", "owners"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "const owners = pm.response.json();",
+                  "pm.test('Devuelve una lista no vacía', () => pm.expect(owners).to.be.an('array').that.is.not.empty);",
+                  "pm.test('Cada propietario expone los campos del contrato', () => {",
+                  "    owners.forEach(o => pm.expect(o).to.include.all.keys('id', 'firstName', 'lastName', 'address', 'city', 'telephone', 'petIds'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET buscar propietarios por apellido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/owners?lastName=Davis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "owners"],
+              "query": [{ "key": "lastName", "value": "Davis" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const owners = pm.response.json();",
+                  "pm.test('Sólo devuelve propietarios con el apellido buscado', () => {",
+                  "    pm.expect(owners).to.be.an('array').that.is.not.empty;",
+                  "    owners.forEach(o => pm.expect(o.lastName).to.match(/^Davis/));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET consultar un propietario por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/owners/{{existingOwnerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "owners", "{{existingOwnerId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const owner = pm.response.json();",
+                  "pm.test('Devuelve el propietario solicitado', () => pm.expect(String(owner.id)).to.eql(pm.collectionVariables.get('existingOwnerId')));",
+                  "pm.test('No expone las mascotas completas, sólo sus identificadores', () => pm.expect(owner.petIds).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST crear un propietario",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Ana\",\n    \"lastName\": \"Zuluaga\",\n    \"address\": \"Calle 1 #2-3\",\n    \"city\": \"Bogota\",\n    \"telephone\": \"3001234567\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/owners", "host": ["{{baseUrl}}"], "path": ["api", "owners"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201 Created', () => pm.response.to.have.status(201));",
+                  "const owner = pm.response.json();",
+                  "pm.test('Asigna un identificador al propietario creado', () => pm.expect(owner.id).to.be.a('number'));",
+                  "pm.test('Devuelve los datos enviados', () => {",
+                  "    pm.expect(owner.firstName).to.eql('Ana');",
+                  "    pm.expect(owner.lastName).to.eql('Zuluaga');",
+                  "    pm.expect(owner.address).to.eql('Calle 1 #2-3');",
+                  "    pm.expect(owner.city).to.eql('Bogota');",
+                  "    pm.expect(owner.telephone).to.eql('3001234567');",
+                  "});",
+                  "pm.test('Incluye la cabecera Location', () => pm.expect(pm.response.headers.get('Location')).to.eql('/api/owners/' + owner.id));",
+                  "pm.collectionVariables.set('ownerId', String(owner.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT actualizar el propietario creado",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Ana Maria\",\n    \"lastName\": \"Zuluaga\",\n    \"address\": \"Carrera 9 #10-11\",\n    \"city\": \"Medellin\",\n    \"telephone\": \"3009876543\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/owners/{{ownerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "owners", "{{ownerId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const owner = pm.response.json();",
+                  "pm.test('Conserva el mismo identificador', () => pm.expect(String(owner.id)).to.eql(pm.collectionVariables.get('ownerId')));",
+                  "pm.test('Refleja los datos actualizados', () => {",
+                  "    pm.expect(owner.firstName).to.eql('Ana Maria');",
+                  "    pm.expect(owner.address).to.eql('Carrera 9 #10-11');",
+                  "    pm.expect(owner.city).to.eql('Medellin');",
+                  "    pm.expect(owner.telephone).to.eql('3009876543');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST vincular una mascota existente",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/owners/{{ownerId}}/pets/{{existingPetId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "owners", "{{ownerId}}", "pets", "{{existingPetId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const owner = pm.response.json();",
+                  "pm.test('La mascota queda asociada al propietario', () => {",
+                  "    pm.expect(owner.petIds.map(String)).to.include(pm.collectionVariables.get('existingPetId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET confirmar la persistencia de los cambios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/owners/{{ownerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "owners", "{{ownerId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const owner = pm.response.json();",
+                  "pm.test('La actualización quedó persistida', () => pm.expect(owner.city).to.eql('Medellin'));",
+                  "pm.test('La asociación con la mascota quedó persistida', () => {",
+                  "    pm.expect(owner.petIds.map(String)).to.include(pm.collectionVariables.get('existingPetId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Casos inválidos",
+      "item": [
+        {
+          "name": "POST sin dirección ni ciudad (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Ana\",\n    \"lastName\": \"Zuluaga\",\n    \"telephone\": \"3001234567\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/owners", "host": ["{{baseUrl}}"], "path": ["api", "owners"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "const error = pm.response.json();",
+                  "pm.test('Identifica los campos incorrectos', () => {",
+                  "    pm.expect(error.errors).to.include.all.keys('address', 'city');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST con nombre vacío y teléfono no numérico (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"\",\n    \"lastName\": \"Zuluaga\",\n    \"address\": \"Calle 1 #2-3\",\n    \"city\": \"Bogota\",\n    \"telephone\": \"tres-mil\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/owners", "host": ["{{baseUrl}}"], "path": ["api", "owners"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "const error = pm.response.json();",
+                  "pm.test('Identifica el nombre y el teléfono', () => {",
+                  "    pm.expect(error.errors).to.include.all.keys('firstName', 'telephone');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST con JSON malformado (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"firstName\":" },
+            "url": { "raw": "{{baseUrl}}/api/owners", "host": ["{{baseUrl}}"], "path": ["api", "owners"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Informa que el cuerpo no es válido', () => pm.expect(pm.response.json().status).to.eql(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET de un propietario inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/owners/{{missingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "owners", "{{missingId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Explica que el propietario no existe', () => pm.expect(pm.response.json().message).to.include('no encontrado'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT sobre un propietario inexistente (404)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Ana\",\n    \"lastName\": \"Zuluaga\",\n    \"address\": \"Calle 1 #2-3\",\n    \"city\": \"Bogota\",\n    \"telephone\": \"3001234567\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/owners/{{missingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "owners", "{{missingId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));",
+                  "pm.test('No crea el propietario mediante PUT', () => pm.expect(pm.response.json().status).to.eql(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST vinculando una mascota inexistente (404)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/owners/{{existingOwnerId}}/pets/{{missingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "owners", "{{existingOwnerId}}", "pets", "{{missingId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Explica que la mascota no existe', () => pm.expect(pm.response.json().message).to.include('Pet'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Convivencia con el legado",
+      "item": [
+        {
+          "name": "GET la vista JSP muestra el propietario creado por REST",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/owners/{{ownerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["owners", "{{ownerId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('La interfaz legada responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve HTML renderizado por JSP', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('text/html'));",
+                  "pm.test('Muestra el propietario creado por la API REST', () => {",
+                  "    pm.expect(pm.response.text()).to.include('Zuluaga');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

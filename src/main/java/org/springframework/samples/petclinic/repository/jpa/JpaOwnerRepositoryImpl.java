@@ -58,6 +58,14 @@ public class JpaOwnerRepositoryImpl implements OwnerRepository {
         return query.getResultList();
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public Collection<Owner> findAll() {
+        // using 'left join fetch' so pets are loaded within the same query, as in findByLastName
+        Query query = this.em.createQuery("SELECT DISTINCT owner FROM Owner owner left join fetch owner.pets");
+        return query.getResultList();
+    }
+
     @Override
     public Owner findById(int id) {
         // using 'join fetch' because a single query should load both owners and pets

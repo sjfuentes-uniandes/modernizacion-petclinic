@@ -42,6 +42,13 @@ public interface OwnerRepository {
     Collection<Owner> findByLastName(String lastName);
 
     /**
+     * Retrieve all <code>Owner</code>s from the data store, together with their <code>Pet</code>s.
+     *
+     * @return a <code>Collection</code> of all <code>Owner</code>s (or an empty <code>Collection</code> if none found)
+     */
+    Collection<Owner> findAll();
+
+    /**
      * Retrieve an <code>Owner</code> from the data store by id.
      *
      * @param id the id to search for

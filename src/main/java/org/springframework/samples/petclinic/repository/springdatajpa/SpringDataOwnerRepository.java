@@ -38,4 +38,9 @@ public interface SpringDataOwnerRepository extends OwnerRepository, Repository<O
     @Override
     @Query("SELECT owner FROM Owner owner left join fetch owner.pets WHERE owner.id =:id")
     Owner findById(@Param("id") int id);
+
+    // the fetch join has to be declared explicitly: a derived findAll() would leave 'pets' uninitialized
+    @Override
+    @Query("SELECT DISTINCT owner FROM Owner owner left join fetch owner.pets")
+    Collection<Owner> findAll();
 }

@@ -14,4 +14,15 @@
         <property name="proxyInterfaces" value="org.springframework.samples.petclinic.service.ClinicService"/>
     </bean>
 
+    <!--
+        - The component scan of mvc-core-config.xml also picks up the REST controller of the web.rest package, which
+        - needs an OwnerService. These tests only exercise the legacy MVC controllers, so the service is never called
+        - and a stub without repositories is enough. It is declared through its own class, rather than as a
+        - Mockito factory-method bean, so Spring can resolve its type whichever order the two files are loaded in.
+    -->
+    <bean id="ownerService" class="org.springframework.samples.petclinic.service.OwnerService">
+        <constructor-arg index="0"><null/></constructor-arg>
+        <constructor-arg index="1"><null/></constructor-arg>
+    </bean>
+
 </beans>
